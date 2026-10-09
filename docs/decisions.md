@@ -14,3 +14,13 @@
 Official references: [Better Auth OTP](https://better-auth.com/docs/plugins/email-otp), [Better Auth plugins](https://better-auth.com/docs/concepts/plugins), [Prisma generators](https://www.prisma.io/docs/orm/v7/prisma-schema/overview/generators), [Prisma seed workflow](https://www.prisma.io/docs/orm/v7/prisma-migrate/workflows/seeding), [NestJS](https://docs.nestjs.com/first-steps), [Resend](https://resend.com/docs/send-with-nodejs), [Stripe Checkout](https://docs.stripe.com/api/checkout/sessions/create). Installed source was checked alongside the official documentation for version-specific details.
 
 - **Local object storage:** MinIO persists product assets in `minio_data`; an initializer creates the bucket and permits anonymous reads only under `products/*`. Templates default to loopback HTTP for development; production requires HTTPS and disables local-IP image optimization. A pinned source build uses the official October 2025 server release because current community distribution is source-only. Docker execution remains unverified due to socket permissions.
+
+- **MinIO client distribution:** the selected `minio/mc` registry image failed to pull on the user’s machine. Build the pinned official client source with a separate Dockerfile target; Compose now pulls only the Go/Alpine base images for MinIO infrastructure.
+
+- **Local PostgreSQL port:** Compose defaults to host port 5433 (`POSTGRES_PORT` override), retaining container port 5432. API runtime/templates and local test instructions match this mapping, so an existing server on 5432 can remain running. CI’s independent PostgreSQL service retains port 5432.
+
+- **Automatic local database port:** both 5432 and 5433 collided with existing host services. `infra:up` now delegates free-port allocation to Docker, records the result in ignored runtime files, and reuses the running project database’s port. No host services are stopped or database volumes removed.
+
+- **Email development runtime:** explicitly import React in shared email templates because the API’s tsx loader uses the classic JSX runtime for this workspace package. Vitest’s automatic JSX transform did not reproduce the missing-import error; validate templates under the API’s actual Node/tsx loader as well.
+
+- **Bootstrap/seed locking:** execute PostgreSQL advisory lock queries using `$executeRaw` to avoid Prisma adapter deserialization of `void`. Owner bootstrap can explicitly promote an active verified customer only with `--promote-verified-customer`, under the same first-owner lock and audited transaction; public signup never grants staff roles.

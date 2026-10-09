@@ -9,7 +9,7 @@ The supplied runtime was Node 25.9.0 and pnpm 11.7.0; deployment and CI pin Node
 | Frozen lockfile installation                              | Passed, offline                                                                                      |
 | ESLint                                                    | Passed                                                                                               |
 | Strict TypeScript, applications/shared packages/test code | Passed                                                                                               |
-| Vitest unit and actual Better Auth handler tests          | 28 tests passed                                                                                      |
+| Vitest unit and actual Better Auth handler tests          | 40 tests passed                                                                                      |
 | Production builds                                         | API bundle and both Next.js applications passed                                                      |
 | Prisma schema validation/client generation                | Passed                                                                                               |
 | Initial SQL migration                                     | Applied without SQL errors to isolated temporary PostgreSQL in single-user mode                      |
@@ -30,7 +30,7 @@ pnpm typecheck
 pnpm test
 pnpm build
 docker compose exec postgres createdb -U commerce commerce_test
-TEST_DATABASE_URL=postgresql://commerce:development-only@localhost:5432/commerce_test pnpm test:integration
+TEST_DATABASE_URL="postgresql://commerce:development-only@$(docker compose port postgres 5432)/commerce_test" pnpm test:integration
 pnpm exec playwright install chromium webkit
 pnpm test:e2e
 ```
@@ -57,3 +57,9 @@ Playwright covers catalog/variant/cart/login gates in Chromium desktop and WebKi
 External credentials, business policies, production DNS/TLS, operational alerts/backups and retention/deletion decisions are required. Expanded gallery/variant editing, browser payment/fulfillment automation, stronger staff MFA, direct storage presigning and mixed-category tax treatment remain follow-up work. Current tax modes and card-only payments must stay within the documented limits. Review dependency overrides and execute CI on the pinned Node version.
 
 MinIO follow-up: Compose configuration and initializer shell syntax pass validation; local storage URLs and production HTTPS boundaries are covered by unit tests. MinIO Docker startup is blocked by Docker socket permissions, so bucket creation and a real upload remain unverified. See [minio.md](minio.md).
+
+MinIO client pull recovery: replaced the unavailable registry image with a pinned source build. Compose configuration and initializer shell syntax pass; source/container compilation remains blocked here: Buildx cannot write its activity file in the read-only Docker configuration directory.
+
+Email send debugging: reproduced a missing React runtime import under the API’s Node/tsx loader and fixed it in shared email templates. A child-process regression checks login/shipment rendering under that loader without sending mail. Safe delivery-error categorization is unit tested; live provider connectivity remains unverified here.
+
+Owner bootstrap and development seeding now execute advisory locks without reading PostgreSQL void results. Bootstrap unit coverage includes explicit verified-customer promotion, session revocation, audited creation, and rejected ineligible accounts. Live bootstrap execution still requires the local PostgreSQL connection unavailable in this restricted environment.

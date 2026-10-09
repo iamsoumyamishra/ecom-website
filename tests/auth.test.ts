@@ -174,6 +174,41 @@ describe("actual Better Auth email OTP handler", () => {
     expect(submitted).toBe(0);
     expect(state.db.verification).toHaveLength(0);
   });
+  it("delivers an admin code for a bootstrapped unverified owner and establishes a separate admin session", async () => {
+    state.db.user.push({
+      id: "owner-fixture",
+      email: "owner@example.com",
+      name: "Owner",
+      role: "OWNER",
+      disabled: false,
+      emailVerified: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    expect((await send("owner@example.com", true)).status).toBe(200);
+    expect(submitted).toBe(1);
+    const response = await call(
+      "/sign-in/email-otp",
+      { email: "owner@example.com", otp: lastOtp },
+      true,
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.user.role).toBe("OWNER");
+    expect(body.user.emailVerified).toBe(true);
+    const cookie = response.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+    expect(cookie).toContain("commerce-admin");
+    expect(
+      (await (await call("/get-session", undefined, true, cookie)).json()).user
+        .role,
+    ).toBe("OWNER");
+    expect(
+      await (await call("/get-session", undefined, false, cookie)).json(),
+    ).toBeNull();
+  });
   it("does not send admin codes for unknown or customer addresses", async () => {
     expect((await send("stranger@example.com", true)).status).toBe(200);
     expect(submitted).toBe(0);

@@ -18,7 +18,7 @@
     "db:migrate": "pnpm --filter @commerce/database migrate",
     "db:seed": "pnpm --filter @commerce/database seed",
     "admin:bootstrap": "pnpm --filter @commerce/api bootstrap",
-    "infra:up": "docker compose up -d",
+    "infra:up": "node --import tsx scripts/infra-up.ts",
     "infra:down": "docker compose down",
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },

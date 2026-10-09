@@ -365,3 +365,9 @@ for milestone status, `docs/decisions.md` for version/tradeoff records, and
   are required before checkout. Never infer launch tax treatment or countries.
 
 - Local object storage uses MinIO in Compose. Keep the API `STORAGE_*` values and both `NEXT_PUBLIC_CDN_URL` values aligned; see `docs/minio.md`. Allow HTTP/local-IP images only in development and preserve HTTPS requirements in production.
+
+- MinIO server and bucket-initializer client both build from pinned official source using separate Dockerfile targets. Do not restore the unavailable `minio/mc` registry image dependency.
+
+- Email templates must render under the API’s actual development loader as well as Vitest. Keep the explicit React import; automatic JSX transforms in unit tests can hide missing runtime imports. Log only safe email-delivery failure categories, never provider error bodies or OTP content.
+
+- Advisory lock functions return PostgreSQL `void`; use `$executeRaw` for lock acquisition. First-owner bootstrap may promote an existing active verified CUSTOMER only through the explicit server-side `--promote-verified-customer` flag; preserve existing-owner protection, session revocation and audit recording.

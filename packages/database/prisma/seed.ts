@@ -56,7 +56,7 @@ const fixtures = [
 try {
   for (const f of fixtures) {
     await db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(180046)`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(180046)`;
       if (await tx.product.findUnique({ where: { slug: f.slug } })) return;
       const product = await tx.product.create({
         data: {

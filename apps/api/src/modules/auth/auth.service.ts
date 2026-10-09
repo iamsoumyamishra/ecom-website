@@ -15,6 +15,11 @@ import { loginEmail } from "@commerce/email";
 import { cookieOnly } from "./cookie-only.plugin.js";
 import { awaitSubmission } from "./await-submission.plugin.js";
 import { Runtime } from "../../common/runtime.js";
+import {
+  EmailSubmissionError,
+  deliveryFailure,
+  deliveryMessage,
+} from "../notifications/email-delivery.js";
 export const AUTH_PATHS = new Set([
   "/email-otp/send-verification-otp",
   "/sign-in/email-otp",
@@ -31,7 +36,7 @@ export class AuthService {
     this.admin = this.create(true);
   }
   private create(admin: boolean) {
-    const { env, db, email, redis } = this.runtime;
+    const { env, db, email, redis, log } = this.runtime;
     return betterAuth({
       secret: env.BETTER_AUTH_SECRET,
       baseURL: admin ? env.ADMIN_ORIGIN : env.SHOP_ORIGIN,
@@ -149,7 +154,7 @@ export class AuthService {
             if (type !== "sign-in")
               throw new APIError("BAD_REQUEST", { message: "Sign-in only" });
             try {
-              if (!email) throw Error("Email is not configured");
+              if (!email) throw new EmailSubmissionError("NOT_CONFIGURED");
               const content = await loginEmail(
                 env.BRAND_NAME,
                 otp,
@@ -161,13 +166,20 @@ export class AuthService {
                 subject: `Your ${env.BRAND_NAME} sign-in code`,
                 ...content,
               });
-              if (result.error) throw Error("Provider rejected submission");
-            } catch {
+              if (result.error)
+                throw new EmailSubmissionError(deliveryFailure(result.error));
+            } catch (error) {
+              const kind =
+                error instanceof EmailSubmissionError ? error.kind : "PROVIDER";
+              log.warn(
+                { deliveryFailure: kind },
+                "OTP email submission failed",
+              );
               await db.verification.deleteMany({
                 where: { identifier: `sign-in-otp-${to}` },
               });
               throw new APIError("SERVICE_UNAVAILABLE", {
-                message: "We could not send the code. Please try again later",
+                message: deliveryMessage(kind, env.NODE_ENV === "production"),
               });
             }
           },

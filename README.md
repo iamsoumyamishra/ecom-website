@@ -8,7 +8,7 @@ Implemented: Better Auth email OTP with Resend delivery, staff authorization and
 
 The root [.env.example](.env.example) is a consolidated configuration reference. Applications load the per-app environment files shown below.
 
-Use Node **24.15.0** and pnpm **11.7.0**. Docker must be running, with ports 5432, 6379, 9000 and 9001 available.
+Use Node **24.15.0** and pnpm **11.7.0**. Docker must be running, with ports 6379, 9000 and 9001 available; PostgreSQL uses an automatically assigned port.
 
 ```bash
 corepack enable
@@ -32,11 +32,15 @@ pnpm dev
 
 Open the storefront at **http://localhost:3000**, staff studio at **http://localhost:3001**, and Swagger through **http://localhost:3000/api/docs**. The API binds to `127.0.0.1:4000` locally; browser requests always use relative `/api`. Local cookies use distinct shop/admin names, including when both applications share localhost. Production cookies are Secure, HttpOnly, SameSite=Lax and host-only.
 
-Seed data adds example clothing without overwriting existing records or stock. Seed routines refuse production. The first-owner command refuses existing owners and existing email accounts, records an audit entry, and leaves the email unverified until the owner completes OTP sign-in. No real email is sent by automated tests.
+`pnpm infra:up` asks Docker to assign an available loopback PostgreSQL port and writes it to the root `.env` (`POSTGRES_PORT`) and local API `DATABASE_URL`. It reuses an already-running project database’s port and preserves other environment settings. Restart the API after changing its port. The container still listens on 5432; other PostgreSQL installations remain untouched. Use `docker compose port postgres 5432` to see the assigned port.
+
+Seed data adds example clothing without overwriting existing records or stock. Seed routines refuse production. The first-owner command refuses existing owners and refuses an existing email by default. If you already signed in as a customer with your Resend account email, explicitly run `pnpm admin:bootstrap your-email --promote-verified-customer`; this accepts only an active verified CUSTOMER, revokes its old sessions and audits the promotion. New owner emails remain unverified until OTP sign-in. No real email is sent by automated tests.
 
 ## Integration setup
 
-**Email:** provide `RESEND_API_KEY`, `EMAIL_FROM`, `SUPPORT_EMAIL`, and `BRAND_NAME` in the API. Verify the sender domain, configure Resend's SPF/DKIM records and your DMARC policy, then request a login code with a controlled mailbox. Provider acceptance does not guarantee inbox delivery. Read [authentication setup](docs/authentication.md).
+**Email (development without a domain):** the API template uses `Forme <onboarding@resend.dev>`. With your Resend key, request an OTP for the email address used by your Resend account; the shared test sender is restricted and cannot deliver to arbitrary customers. Resend’s `delivered@resend.dev` address simulates delivery events and is not an inbox for retrieving login codes. Restart the API after changing sender settings.
+
+**Email (production):** provide `RESEND_API_KEY`, `EMAIL_FROM`, `SUPPORT_EMAIL`, and `BRAND_NAME` in the API. Verify the sender domain, configure Resend's SPF/DKIM records and your DMARC policy, then request a login code with a controlled mailbox. Provider acceptance does not guarantee inbox delivery. Read [authentication setup](docs/authentication.md).
 
 **Payments:** provide Stripe test credentials first: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and a `STRIPE_PAYMENT_METHOD_CONFIGURATION` containing **card only**. Prefer a restricted key with Checkout Sessions, PaymentIntents, charges and refunds permissions needed by this API. Configure explicit `SHIPPING_COUNTRIES` (comma-separated ISO codes), `SHIPPING_PRICE_MINOR` (integer EUR cents), and `TAX_POLICY`. Supported tax treatment is `not_collecting` or `included`. For `included`, supply `TAX_RATES_JSON` with explicit country rates in basis points, covering the entire merchandise assortment and delivery. There are no assumed countries or tax rates; special product tax treatment/Stripe Tax requires further implementation and business configuration. Approve and publish delivery, privacy and terms policies before launch.
 
@@ -46,7 +50,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 Use the signing secret printed by the CLI for local development. Configure the live webhook at `https://shop.your-domain/api/webhooks/stripe`, never the internal API port. Subscribe to `checkout.session.completed`, `checkout.session.expired`, `refund.created`, `refund.updated`, `refund.failed`, and `charge.refunded`. See [checkout and reconciliation](docs/checkout.md).
 
-**Images:** local storage uses MinIO. `pnpm infra:up` builds the pinned MinIO server, starts it on **http://127.0.0.1:9000**, and runs an idempotent initializer for the `commerce-images` bucket. The console is **http://127.0.0.1:9001**. Development credentials are `commerce-storage` / `development-storage-only`, matching the environment templates. The first build downloads the server source and Go dependencies and can take several minutes. Only `products/*` objects permit anonymous reads; anonymous listing, uploads and deletions are not granted. Uploaded product photos therefore work without a separate local CDN.
+**Images:** local storage uses MinIO. `pnpm infra:up` builds the pinned MinIO server and client from source, starts it on **http://127.0.0.1:9000**, and runs an idempotent initializer for the `commerce-images` bucket. The console is **http://127.0.0.1:9001**. Development credentials are `commerce-storage` / `development-storage-only`, matching the environment templates. The first build downloads the server source and Go dependencies and can take several minutes. Only `products/*` objects permit anonymous reads; anonymous listing, uploads and deletions are not granted. Uploaded product photos therefore work without a separate local CDN.
 
 For an existing installation, copy the `STORAGE_*` values from the updated API template and `NEXT_PUBLIC_CDN_URL` from both frontend templates into your ignored runtime files, then restart all apps. Do not replace existing authentication/payment credentials. If you override Compose's `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` or `STORAGE_BUCKET` through the root `.env`, update API credentials/bucket and both public image URLs to match. See [MinIO setup](docs/minio.md).
 
@@ -66,7 +70,7 @@ pnpm build
 The PostgreSQL integration suite requires a separate database whose name ends in `_test`. It creates and removes a unique schema, never truncates the supplied database, and mocks provider network calls only.
 
 ```bash
-TEST_DATABASE_URL=postgresql://commerce:development-only@localhost:5432/commerce_test pnpm test:integration
+TEST_DATABASE_URL="postgresql://commerce:development-only@$(docker compose port postgres 5432)/commerce_test" pnpm test:integration
 ```
 
 With all three applications running and development seed fixtures installed:

@@ -5,7 +5,7 @@ services:
       POSTGRES_DB: commerce
       POSTGRES_USER: commerce
       POSTGRES_PASSWORD: development-only
-    ports: ["127.0.0.1:5432:5432"]
+    ports: ["127.0.0.1:${POSTGRES_PORT:-0}:5432"]
     volumes: ["postgres_data:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U commerce -d commerce"]
@@ -25,6 +25,7 @@ services:
   minio:
     build:
       context: ./ops/minio
+      target: server
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-commerce-storage}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-development-storage-only}
@@ -37,7 +38,9 @@ services:
       timeout: 3s
       retries: 20
   minio-init:
-    image: minio/mc:RELEASE.2025-07-16T15-35-03Z-cpuv1
+    build:
+      context: ./ops/minio
+      target: client
     depends_on:
       minio:
         condition: service_healthy
