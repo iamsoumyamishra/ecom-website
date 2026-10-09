@@ -1,0 +1,27 @@
+{
+  "name": "@commerce/database",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "node --env-file=../../apps/api/.env node_modules/prisma/build/index.js migrate deploy",
+    "migrate:dev": "node --env-file=../../apps/api/.env node_modules/prisma/build/index.js migrate dev",
+    "seed": "tsx --env-file=../../apps/api/.env prisma/seed.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "7.10.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "pg": "8.22.0"
+  },
+  "devDependencies": {
+    "prisma": "7.10.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "@types/pg": "8.20.0"
+  }
+}

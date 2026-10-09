@@ -1,0 +1,61 @@
+// Generated from Better Auth getAuthTables; do not guess or edit auth fields.
+model User {
+  id String @id
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  createdAt DateTime
+  updatedAt DateTime
+  role String @default("CUSTOMER")
+  disabled Boolean @default(false)
+  sessions Session[]
+  accounts Account[]
+  addresses Address[]
+  carts Cart[]
+  orders Order[]
+  checkouts CheckoutAttempt[]
+}
+
+model Session {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  @@index([userId])
+}
+
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime
+  updatedAt DateTime
+  @@index([userId])
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime
+  updatedAt DateTime
+  @@unique([identifier])
+}
+

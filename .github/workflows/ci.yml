@@ -1,0 +1,60 @@
+name: Commerce validation
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: commerce
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: commerce_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U commerce -d commerce_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://commerce:test-only@localhost:5432/commerce_test
+      TEST_DATABASE_URL: postgresql://commerce:test-only@localhost:5432/commerce_test
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - run: corepack enable && corepack prepare pnpm@11.7.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm lint && pnpm typecheck && pnpm test
+      - run: pnpm test:integration
+      - run: pnpm build
+      - name: Configure local smoke environment
+        run: |
+          cp apps/api/.env.example apps/api/.env
+          cp apps/web/.env.example apps/web/.env.local
+          cp apps/admin/.env.example apps/admin/.env.local
+          sed -i 's/development-only/test-only/g;s/NODE_ENV=development/NODE_ENV=test/' apps/api/.env
+          sed -i 's@/commerce$@/commerce_test@' apps/api/.env
+      - run: pnpm db:migrate && pnpm db:seed
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - name: Start applications and run smoke tests
+        run: |
+          pnpm --filter @commerce/api start > /tmp/api.log 2>&1 &
+          pnpm --filter @commerce/web start > /tmp/web.log 2>&1 &
+          pnpm --filter @commerce/admin start > /tmp/admin.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://localhost:3000/catalog && break || sleep 2; done
+          for i in $(seq 1 40); do curl -fsS http://localhost:3000/api/health/ready && break || sleep 2; done
+          curl -fsS http://localhost:3000/api/health/ready
+          pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-traces
+          path: test-results

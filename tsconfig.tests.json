@@ -1,0 +1,12 @@
+{
+  "extends": "./packages/typescript-config/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "experimentalDecorators": true,
+    "noEmit": true,
+    "paths": { "@commerce/contracts": ["./packages/contracts/src/index.ts"] }
+  },
+  "include": ["tests/**/*.ts", "playwright.config.ts", "vitest*.config.ts"]
+}

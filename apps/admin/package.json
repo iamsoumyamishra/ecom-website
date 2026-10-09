@@ -1,0 +1,29 @@
+{
+  "name": "@commerce/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build --webpack",
+    "start": "next start --port 3001",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@commerce/ui": "workspace:*",
+    "@commerce/contracts": "workspace:*",
+    "@commerce/api-client": "workspace:*",
+    "@tanstack/react-query": "5.101.4",
+    "react-hook-form": "7.82.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "typescript": "5.9.3",
+    "tailwindcss": "4.3.3",
+    "@tailwindcss/postcss": "4.3.3"
+  }
+}

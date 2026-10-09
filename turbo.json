@@ -1,0 +1,45 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": [
+        "API_INTERNAL_URL",
+        "SHOP_ORIGIN",
+        "ADMIN_ORIGIN",
+        "NEXT_PUBLIC_BRAND_NAME",
+        "NEXT_PUBLIC_SHOP_ORIGIN",
+        "NEXT_PUBLIC_CDN_URL"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "@commerce/ui#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@commerce/contracts#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@commerce/api-client#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@commerce/database#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@commerce/email#build": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    }
+  }
+}

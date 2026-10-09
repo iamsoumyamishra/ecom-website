@@ -1,0 +1,55 @@
+# Render SHOP_HOST, ADMIN_HOST, SHOP_ORIGIN, ADMIN_ORIGIN and PROXY_SECRET from
+# trusted deployment configuration. API has no public port mapping.
+log_format commerce '$request_id $request_method $status';
+upstream storefront { server web:3000; }
+upstream studio { server admin:3001; }
+upstream commerce_api { server api:4000; }
+server {
+ listen 443 ssl;
+ server_name ${SHOP_HOST};
+ ssl_certificate /etc/nginx/tls/shop.crt;
+ ssl_certificate_key /etc/nginx/tls/shop.key;
+ ssl_protocols TLSv1.2 TLSv1.3;
+ access_log /var/log/nginx/commerce.log commerce;
+ client_max_body_size 10m;
+ location /api/ {
+  access_log off;
+  proxy_pass http://commerce_api;
+  proxy_set_header Host $host;
+  proxy_set_header X-Commerce-Proxy "${PROXY_SECRET}";
+  proxy_set_header X-Commerce-Origin "${SHOP_ORIGIN}";
+  proxy_set_header X-Commerce-Client-IP $remote_addr;
+  proxy_set_header Forwarded "";
+  proxy_set_header X-Forwarded-Host "";
+  proxy_set_header X-Forwarded-Proto "";
+  proxy_set_header X-Forwarded-For "";
+  proxy_set_header Cookie $http_cookie;
+  proxy_read_timeout 60s;
+ }
+ location / { proxy_pass http://storefront; proxy_set_header Host $host; }
+}
+server {
+ listen 443 ssl;
+ server_name ${ADMIN_HOST};
+ ssl_certificate /etc/nginx/tls/admin.crt;
+ ssl_certificate_key /etc/nginx/tls/admin.key;
+ ssl_protocols TLSv1.2 TLSv1.3;
+ add_header X-Robots-Tag "noindex, nofollow" always;
+ access_log /var/log/nginx/commerce.log commerce;
+ client_max_body_size 10m;
+ location /api/ {
+  access_log off;
+  proxy_pass http://commerce_api;
+  proxy_set_header Host $host;
+  proxy_set_header X-Commerce-Proxy "${PROXY_SECRET}";
+  proxy_set_header X-Commerce-Origin "${ADMIN_ORIGIN}";
+  proxy_set_header X-Commerce-Client-IP $remote_addr;
+  proxy_set_header Forwarded "";
+  proxy_set_header X-Forwarded-Host "";
+  proxy_set_header X-Forwarded-Proto "";
+  proxy_set_header X-Forwarded-For "";
+  proxy_set_header Cookie $http_cookie;
+  proxy_read_timeout 60s;
+ }
+ location / { proxy_pass http://studio; proxy_set_header Host $host; }
+}

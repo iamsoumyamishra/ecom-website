@@ -1,0 +1,37 @@
+{
+  "name": "clothing-commerce",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=24.15.0 <26",
+    "pnpm": ">=11.7.0 <12"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "turbo typecheck && tsc -p tsconfig.tests.json --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "pnpm --filter @commerce/database generate",
+    "db:migrate": "pnpm --filter @commerce/database migrate",
+    "db:seed": "pnpm --filter @commerce/database seed",
+    "admin:bootstrap": "pnpm --filter @commerce/api bootstrap",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+  },
+  "devDependencies": {
+    "turbo": "2.11.7",
+    "typescript": "5.9.3",
+    "tsx": "4.23.15",
+    "eslint": "9.39.5",
+    "typescript-eslint": "8.71.0",
+    "prettier": "3.9.9",
+    "vitest": "4.1.10",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.3"
+  },
+  "type": "module"
+}

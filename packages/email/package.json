@@ -1,0 +1,21 @@
+{
+  "name": "@commerce/email",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "@react-email/components": "1.0.12",
+    "@react-email/render": "2.0.6"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
